@@ -16,15 +16,15 @@ public partial class MainPage : ContentPage
 
 #if ANDROID
         System.Diagnostics.Debug.WriteLine("Checking for PDF intent...");
-    if (Platform.CurrentActivity?.Intent?.Data != null)
-    {
-        System.Diagnostics.Debug.WriteLine($"Found intent data: {Platform.CurrentActivity.Intent.Data}");
-        using (var data = Platform.CurrentActivity.Intent.Data)
+        if (Platform.CurrentActivity?.Intent?.Data != null)
         {
-            var uri = new Uri(data.ToString());
-            HandlePdfIntent(uri);
+            System.Diagnostics.Debug.WriteLine($"Found intent data: {Platform.CurrentActivity.Intent.Data}");
+            using (var data = Platform.CurrentActivity.Intent.Data)
+            {
+                var uri = new Uri(data.ToString());
+                HandlePdfIntent(uri);
+            }
         }
-    }
 #endif
     }
 
@@ -41,8 +41,7 @@ public partial class MainPage : ContentPage
 
             // Extract Old Form Data
             var oldFormData = PdfUtils.ExtractPdfFormData(fileStream);
-            var infoFormData = GetInfoData(oldFormData);
-            var report = new ReportData(infoFormData);
+            var report = new ReportData(oldFormData, true);
 
             // Load Next Model
             var viewModel = new CustomerInfoViewModel(report);
@@ -55,30 +54,6 @@ public partial class MainPage : ContentPage
         {
             await DisplayAlert("Error", ex.Message, "OK");
         }
-    }
-
-    private Dictionary<string, string> GetInfoData(Dictionary<string, string> oldFormData)
-    {
-        var infoFormData = new Dictionary<string, string>();
-
-        // Define required fields
-        string[] requiredFields =
-        [
-            // Customer Info
-            "PermitAccountNo", "FacilityOwner", "Address", "Contact", "Phone", "Email",
-            "OwnerRep", "RepAddress", "PersontoContact", "Phone-0",
-
-            // Device Info
-            "WaterPurveyor", "AssemblyAddress", "On Site Location of Assembly",
-            "PrimaryBusinessService", "InstallationIs", "ProtectionType", "ServiceType",
-            "WaterMeterNo", "SerialNo", "ModelNo", "Size", "Manufacturer", "BFType"
-        ];
-
-        foreach (var field in requiredFields)
-            if (oldFormData != null && oldFormData.TryGetValue(field, out var value))
-                infoFormData[field] = value;
-
-        return infoFormData;
     }
 
     #region Open Pdf Button
@@ -198,14 +173,14 @@ public partial class MainPage : ContentPage
         try
         {
             System.Diagnostics.Debug.WriteLine("[MainPage] HandlePdfIntent called with URI: " + pdfUri);
-            
+
             // Get Intent File Stream
             var pdfIntentHelper = IPlatformApplication.Current?.Services.GetService<IPdfIntentHelper>();
             var pdfStream = await pdfIntentHelper.GetPdfStream(pdfUri);
-            
+
             if (pdfStream == null)
                 throw new FileNotFoundException("File not found.");
-            
+
             // Load File Stream
             LoadFileStream(pdfStream);
         }
