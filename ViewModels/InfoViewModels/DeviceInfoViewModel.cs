@@ -1,6 +1,4 @@
 ﻿using ReportFlow.Models;
-using ReportFlow.Models.Repair;
-using ReportFlow.Models.Test;
 using ReportFlow.ViewModels.TestViewModels;
 using DeviceInfo = ReportFlow.Models.Info.DeviceInfo;
 
@@ -8,8 +6,6 @@ namespace ReportFlow.ViewModels.InfoViewModels;
 
 public class DeviceInfoViewModel : BaseBackflowViewModel
 {
-    private bool _typeChanged;
-
     #region Dropdown Items
 
     public List<string> InstallationStatusOptions { get; } = ["NEW", "EXISTING", "REPLACEMENT"];
@@ -159,8 +155,6 @@ public class DeviceInfoViewModel : BaseBackflowViewModel
         get => Report.DeviceInfo.Device.Type;
         set
         {
-            if (Report.DeviceInfo.Device.Type != value)
-                _typeChanged = true;
             Report.DeviceInfo.Device.Type = value;
             OnPropertyChanged(nameof(Type));
         }
@@ -198,25 +192,6 @@ public class DeviceInfoViewModel : BaseBackflowViewModel
 
     private async Task NavigateToTestPage()
     {
-        if (_typeChanged)
-        {
-            var overwrite = await Application.Current.MainPage.DisplayAlert(
-                "Reset Tests & Repairs",
-                "The backflow type has changed, do you want to reset any test and repair details?",
-                "Reset", "Cancel");
-
-            if (overwrite)
-            {
-                Report.InitialTest = new TestInfo();
-                Report.FinalTest = new TestInfo();
-                Report.RepairInfo = new RepairInfo();
-            }
-            else
-            {
-                return;
-            }
-        }
-
         var type = Report.DeviceInfo.Device.Type;
         if (string.IsNullOrEmpty(type)) throw new InvalidDataException();
 
